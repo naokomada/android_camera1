@@ -20,17 +20,17 @@ class MyOpenCV {
         /* ②：画像を二値化 */
         mat = getThreshold(mat)
 
+        // あたらしいBmpをつくってmatを変換する
+//        val newBmp = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888)
+//        Utils.matToBitmap(mat, newBmp)
+//        canvasView.setmBitmap(newBmp)
+//        canvasView.invalidate()
+
         /* 輪郭の座標を取得 */
         val contours = getCornerOfRects(mat)
         val points = contour2point(contours)
 
-        val firstRectMat = trimRect(mat, points.first())
-        val firstRectcontours = getCornerOfRects(firstRectMat)
-        val firstRectPoints = contour2point(firstRectcontours)
-
-        //val newBmp = keystoneCorrection(bmp, points)
-        val newBmp = keystoneCorrection(firstRectMat, points)
-        if (newBmp == null) return
+        val newBmp = keystoneCorrection(bmp, points)
 
         /* ②：VIEWに原画像（Bitmap）を登録 */
         canvasView.setmBitmap(newBmp)
@@ -41,9 +41,10 @@ class MyOpenCV {
         //canvasView.invalidate()
     }
 
-    private fun keystoneCorrection(mat: Mat, point: List<List<Point>>): Bitmap? {
-//        var mat = Mat()
-//        Utils.bitmapToMat(bmp, mat, true)
+    // 台形補正する
+    private fun keystoneCorrection(bmp: Bitmap, point: List<List<Point>>): Bitmap {
+        var mat = Mat()
+        Utils.bitmapToMat(bmp, mat, true)
 
         var dstMat = Mat()
         val points = point.first()
@@ -53,7 +54,8 @@ class MyOpenCV {
         val dstPointsMat = Converters.vector_Point_to_Mat(dstPoints, CvType.CV_32F)
         val perspectiveMmat = Imgproc.getPerspectiveTransform(srcPointsMat, dstPointsMat)
 
-        Imgproc.warpPerspective(mat, dstMat, perspectiveMmat, mat.size(), Imgproc.INTER_LINEAR)
+        val srcRect = trimRect(mat, points)
+        Imgproc.warpPerspective(srcRect, dstMat, perspectiveMmat, srcRect.size(), Imgproc.INTER_LINEAR)
 
         val newBmp = Bitmap.createBitmap(dstMat.width(), dstMat.height(), Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(dstMat, newBmp)
